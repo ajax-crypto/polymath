@@ -80,7 +80,7 @@ class Polynomial
 	std::vector<Term<Number, var>> _terms; 
 	unsigned int _degree ;
 	void adjust();
-	bool binomialCapable();
+	bool binomialCapable() const ;
 	
 public:
 	Polynomial();
@@ -95,6 +95,7 @@ public:
 	unsigned int degree() const { return _degree; }
 	unsigned int validTerms() const ;
 	Number operator()(Number) const ;
+	Polynomial<Number, var> getDerivative(unsigned int) const ;
 	
 	template <typename number, char v> friend Polynomial<number, v> operator+(const Polynomial<number, v>&, const Polynomial<number, v>&);
 	template <typename number, char v> friend Polynomial<number, v> operator-(const Polynomial<number, v>&, const Polynomial<number, v>&);
@@ -157,7 +158,21 @@ void Polynomial<Number, var>::adjust()
 }
 
 template <typename Number, char var> 
-bool Polynomial<Number, var>::binomialCapable()
+Polynomial<Number, var> Polynomial<Number, var>::getDerivative(unsigned int order) const
+{
+	Polynomial<Number, var> derivative ;
+	for(auto i = _degree; i >= order; --i)
+	{
+		auto coefficient = _terms[i]._coefficient ;
+		for(auto j = 0u; j < order; ++j)
+			coefficient *= static_cast<Number>(i - j);
+		derivative.addTerm(Term<Number, var>(coefficient, i-order));
+	}
+	return derivative ;
+}
+
+template <typename Number, char var> 
+bool Polynomial<Number, var>::binomialCapable() const
 {
 	bool ret = _terms[0]._coefficient > 0 ;
 	auto count = 0u ;
