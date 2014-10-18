@@ -74,10 +74,10 @@ public:
 	}
 };
 
-template <typename Number, char var = 'x'> 
-class Polynomial 
+template <typename Number, char var = 'x'>
+class Polynomial
 {
-	std::vector<Term<Number, var>> _terms; 
+	std::vector<Term<Number, var>> _terms;
 	unsigned int _degree ;
 	void adjust();
 	bool binomialCapable() const ;
@@ -95,7 +95,9 @@ public:
 	unsigned int degree() const { return _degree; }
 	unsigned int validTerms() const ;
 	Number operator()(Number) const ;
+	Term<Number, var> operator[](unsigned int) const ;
 	Polynomial<Number, var> getDerivative(unsigned int) const ;
+	Polynomial<Number, var> getIntegral(Number) const ;
 	
 	template <typename number, char v> friend Polynomial<number, v> operator+(const Polynomial<number, v>&, const Polynomial<number, v>&);
 	template <typename number, char v> friend Polynomial<number, v> operator-(const Polynomial<number, v>&, const Polynomial<number, v>&);
@@ -105,20 +107,20 @@ public:
 	template <typename number, char v> friend Polynomial<number, v> operator^(const Polynomial<number, v>&, unsigned int);
 	
 	friend std::ostream& operator<<(std::ostream& stream, const Polynomial<Number, var>& poly) {
-		for(auto& term : poly._terms) 
+		for(auto& term : poly._terms)
 			stream << term << " " ;
 		return stream ;
 	}
 };
 
-template <typename Number, char var> 
+template <typename Number, char var>
 Polynomial<Number, var>::Polynomial()
 {
 	_degree = 0 ;
 	_terms.push_back(Term<Number, var>(0, 0));
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 Polynomial<Number, var>::Polynomial(const std::vector<Term<Number, var>>& _terms_)
 {
 	std::vector<Term<Number, var>> temp(_terms_);
@@ -129,7 +131,7 @@ Polynomial<Number, var>::Polynomial(const std::vector<Term<Number, var>>& _terms
 		addTerm(temp[i]);
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 Polynomial<Number, var>::Polynomial(std::initializer_list<Term<Number, var>> _terms_)
 {
 	std::vector<Term<Number, var>> temp(_terms_);
@@ -140,12 +142,12 @@ Polynomial<Number, var>::Polynomial(std::initializer_list<Term<Number, var>> _te
 		addTerm(temp[i]);
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 void Polynomial<Number, var>::adjust()
 {
 	while(_degree > 0)
 	{
-		if(_terms[_degree]._coefficient == 0) 
+		if(_terms[_degree]._coefficient == 0)
 		{
 			_terms.erase(_terms.begin() + _degree);
 			--_degree ;
@@ -157,7 +159,7 @@ void Polynomial<Number, var>::adjust()
 		_terms.push_back(Term<Number, var>(0, 0));
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 Polynomial<Number, var> Polynomial<Number, var>::getDerivative(unsigned int order) const
 {
 	Polynomial<Number, var> derivative ;
@@ -171,7 +173,21 @@ Polynomial<Number, var> Polynomial<Number, var>::getDerivative(unsigned int orde
 	return derivative ;
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
+Polynomial<Number, var> Polynomial<Number, var>::getIntegral(Number constant) const
+{
+	Polynomial<Number, var> integral ;
+	for(auto i = 0; i < _degree; ++i)
+	{
+		integral.addTerm(Term<Number, var>(
+			_terms[i]._coefficient / static_cast<Number>(_terms[i]._exponent + 1),
+			_terms[i]._exponent + 1));
+	}
+	integral.addTerm(Term<Number, var>(constant, 0u));
+	return integral;
+}
+
+template <typename Number, char var>
 bool Polynomial<Number, var>::binomialCapable() const
 {
 	bool ret = _terms[0]._coefficient > 0 ;
@@ -182,7 +198,7 @@ bool Polynomial<Number, var>::binomialCapable() const
 	return ret && (count == 1u);
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 void Polynomial<Number, var>::addTerm(const Term<Number, var>& term)
 {
 	if(_degree >= term._power)
@@ -199,7 +215,7 @@ void Polynomial<Number, var>::addTerm(const Term<Number, var>& term)
 	}
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 unsigned int Polynomial<Number, var>::validTerms() const
 {
 	auto count = 0u ;
@@ -208,7 +224,7 @@ unsigned int Polynomial<Number, var>::validTerms() const
 	return count ;
 }
 
-template <typename Number, char var> 
+template <typename Number, char var>
 Number Polynomial<Number, var>::operator()(Number n) const
 {
 	Number result = _terms[0]._coefficient;
@@ -221,7 +237,7 @@ Number Polynomial<Number, var>::operator()(Number n) const
 	return result ;
 }
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator+(const Polynomial<number, v>& lhs, const Polynomial<number, v>& rhs)
 {
 	Polynomial<number, v> sum;
@@ -229,12 +245,12 @@ Polynomial<number, v> operator+(const Polynomial<number, v>& lhs, const Polynomi
 	auto i = 0 ;
 	for(; i <= min; ++i)
 		sum.addTerm(Term<number, v>(lhs._terms[i].getCoefficient() + rhs._terms[i].getCoefficient() , i)) ;
-	while(i < lhs._terms.size()) 
+	while(i < lhs._terms.size())
 	{
 		sum.addTerm(Term<number, v>(lhs._terms[i].getCoefficient() , i));
 		++i ;
 	}
-	while(i < rhs._terms.size()) 
+	while(i < rhs._terms.size())
 	{
 		sum.addTerm(Term<number, v>(rhs._terms[i].getCoefficient() , i));
 		++i ;
@@ -244,7 +260,7 @@ Polynomial<number, v> operator+(const Polynomial<number, v>& lhs, const Polynomi
 	return sum ;
 }
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator-(const Polynomial<number, v>& lhs, const Polynomial<number, v>& rhs)
 {
 	Polynomial<number, v> diff;
@@ -252,12 +268,12 @@ Polynomial<number, v> operator-(const Polynomial<number, v>& lhs, const Polynomi
 	auto i = 0 ;
 	for(; i <= min; ++i)
 		diff.addTerm(Term<number, v>(lhs._terms[i].getCoefficient() - rhs._terms[i].getCoefficient() , i)) ;
-	while(i < lhs._terms.size()) 
+	while(i < lhs._terms.size())
 	{
 		diff.addTerm(Term<number, v>(lhs._terms[i].getCoefficient() , i));
 		++i ;
 	}
-	while(i < rhs._terms.size()) 
+	while(i < rhs._terms.size())
 	{
 		diff.addTerm(Term<number, v>(-rhs._terms[i].getCoefficient() , i));
 		++i ;
@@ -267,18 +283,18 @@ Polynomial<number, v> operator-(const Polynomial<number, v>& lhs, const Polynomi
 	return diff ;
 }
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator*(const Polynomial<number, v>& lhs, const Polynomial<number, v>& rhs)
 {
 	Polynomial<number, v> product;
-	for(auto& rterm : rhs._terms) 
+	for(auto& rterm : rhs._terms)
 		for(auto& lterm : lhs._terms)
-			product.addTerm(Term<number, v>(lterm.getCoefficient() * rterm.getCoefficient(), 
+			product.addTerm(Term<number, v>(lterm.getCoefficient() * rterm.getCoefficient(),
 			                                lterm.getPower() + rterm.getPower()));
 	return product ;
 }
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator/(const Polynomial<number, v>& lhs, const Polynomial<number, v>& rhs)
 {
 	Polynomial<number, v> quotient, dividend(lhs._terms);
@@ -289,16 +305,18 @@ Polynomial<number, v> operator/(const Polynomial<number, v>& lhs, const Polynomi
 	if(rhs.validTerms() == 1u)
 	{
 		auto i = dividend._degree ;
+		auto power = rhs._terms[rhs._degree].getPower() ;
+		auto coefficient = rhs._terms[rhs._degree].getCoefficient() ;
 		for(; i > 0; --i)
-			if(dividend._terms[i].getPower() >= rhs._terms[i].getPower())
+			if(dividend._terms[i].getPower() >= power)
 				quotient.addTerm(Term<number, v>(
-					dividend._terms[i].getCoefficient() / rhs._terms[i].getCoefficient(), 
-					dividend._terms[i].getPower() - rhs._terms[i].getPower()
+					dividend._terms[i].getCoefficient() / coefficient,
+					dividend._terms[i].getPower() - power
 				));
 		if(dividend._terms[i].getPower() >= rhs._terms[i].getPower())
 			quotient.addTerm(Term<number, v>(
-				dividend._terms[i].getCoefficient() / rhs._terms[i].getCoefficient(), 
-				dividend._terms[i].getPower() - rhs._terms[i].getPower()
+				dividend._terms[i].getCoefficient() / coefficient,
+				dividend._terms[i].getPower() - power
 			));
 		return quotient ;
 	}
@@ -313,7 +331,7 @@ Polynomial<number, v> operator/(const Polynomial<number, v>& lhs, const Polynomi
 	return quotient ;
 }
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator%(const Polynomial<number, v>& lhs, const Polynomial<number, v>& rhs)
 {
 	Polynomial<number, v> remainder, dividend(lhs._terms);
@@ -340,7 +358,7 @@ Polynomial<number, v> operator%(const Polynomial<number, v>& lhs, const Polynomi
 }
 
 
-template <typename number, char v> 
+template <typename number, char v>
 Polynomial<number, v> operator^(const Polynomial<number, v>& poly, unsigned int power)
 {
 	Polynomial<number, v> result;
@@ -356,8 +374,8 @@ Polynomial<number, v> operator^(const Polynomial<number, v>& poly, unsigned int 
 	{
 		for(auto i = 0; i <= power; ++i)
 			result.addTerm(Term<number, v>(
-				std::pow(poly._terms[0].getCoefficient(), power - i) * 
-				static_cast<number>(combination(power, i)), 
+				std::pow(poly._terms[0].getCoefficient(), power - i) *
+				static_cast<number>(combination(power, i)),
 				i * poly._terms[1].getPower()
 			));
 	}
