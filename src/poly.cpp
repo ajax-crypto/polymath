@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <functional>
 
 namespace polymath
 {
@@ -81,6 +82,7 @@ class Polynomial
 	unsigned int _degree ;
 	void adjust();
 	bool binomialCapable() const ;
+	static Number zero ;
 	
 public:
 	Polynomial();
@@ -98,6 +100,9 @@ public:
 	Term<Number, var> operator[](unsigned int) const ;
 	Polynomial<Number, var> getDerivative(unsigned int) const ;
 	Polynomial<Number, var> getIntegral(Number) const ;
+	Polynomial<Number, var> clone() const ;
+	std::vector<Number> getRealRoots(unsigned int, Number, Number, Number) const ;
+	Polynomial<Number, var> transform(const std::function<Number(Number)>&) const;
 	
 	template <typename number, char v> friend Polynomial<number, v> operator+(const Polynomial<number, v>&, const Polynomial<number, v>&);
 	template <typename number, char v> friend Polynomial<number, v> operator-(const Polynomial<number, v>&, const Polynomial<number, v>&);
@@ -112,6 +117,8 @@ public:
 		return stream ;
 	}
 };
+
+Number Polynomial<Number, var>::zero = static_cast<Number>(0);
 
 template <typename Number, char var>
 Polynomial<Number, var>::Polynomial()
@@ -157,6 +164,15 @@ void Polynomial<Number, var>::adjust()
 	}
 	if(_degree == 0)
 		_terms.push_back(Term<Number, var>(0, 0));
+}
+
+template <typename Number, char var>
+Polynomial<Number, var> Polynomial<Number, var>::clone() const 
+{
+	Polynomial<Number, var> poly ;
+	poly._terms = _terms ;
+	poly._degree = _degree ;
+	return poly ;
 }
 
 template <typename Number, char var>
@@ -222,6 +238,60 @@ unsigned int Polynomial<Number, var>::validTerms() const
 	for(auto& term : _terms)
 		count += (term._coefficient != static_cast<Number>(0)) ;
 	return count ;
+}
+
+template <typename Number, char var>
+Polynomial<Number, var> Polynomial<Number, var>::transform(const std::function<Number(Number)>& f) const
+{
+	Polynomial<Number, var> ret = clone();
+	for(auto term : ret._terms)
+		term._coefficient = f(term._coefficient);
+	ret.adjust();
+	return ret ;
+}
+
+template <typename Number, char var>
+std::vector<Number> Polynomial<Number, var>::getRealRoots(unsigned int iter_count, Number min, Number start, Number end) const
+{
+	std::vector<Number> roots ;
+	Polynomial<Number, var> temp = clone(), d1, d2;
+	Number tempval, current, approx ; 
+	if(_terms[0]._coefficient == static_cast<Number>(0))
+	{
+		roots.push_back(static_cast<Number>(0));
+		for(auto term : roots._terms)
+			term._power -= 1u ;
+		roots.adjust();
+	}
+	tempval = temp(start);
+	for(auto i = (++start); i < end; ++i) {
+		current = temp(i);
+		if(tempval < 0 && current > 0 ||
+		   tempval > 0 && current < 0)
+		{
+			approx = tempval ;
+			d1 = temp.getDerivative(1);
+			d2 = temp.getDerivative(2);
+			for(auto i = 0u; i < iter_count && a > min; ++i)
+			{
+				auto val1 = temp(approx) ;
+				if(val1 < min)
+					break ;
+				auto val2 = d1(approx), val3 = d2(approx);
+				auto G = val2/val1 ;
+				auto H = (G*G) - val3/val1 ;
+				auto n = static_cast<Number>(temp._degree) ;
+				auto t = static_cast<Number>(std::sqrt(static_cast<double>((n - 
+					static_cast<Number>(1)) * ((n*H) - (G*G)))));
+				auto a = n/(G + (G >= 0)*t - (G < 0)*t);
+				approx -= a ;
+			}
+			roots.push_back(approx);
+		}
+		else
+			tempval = current;
+	}
+	return roots ;
 }
 
 template <typename Number, char var>
